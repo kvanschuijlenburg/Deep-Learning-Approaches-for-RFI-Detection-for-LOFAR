@@ -1,0 +1,12 @@
+numpy
+tqdm
+h5py
+matplotlib
+scikit-learn
+tensorflow-gpu==2.10.0
+tensorflow-io==0.27.0
+opencv-python
+astropy
+tensorflow-addons
+vit-keras
+pandas

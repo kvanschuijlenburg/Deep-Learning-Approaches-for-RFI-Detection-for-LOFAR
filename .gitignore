@@ -1,0 +1,5 @@
+/tf2_env/
+/.venv/
+/.vscode/
+/.VSCodeCounter/
+.pylintrc
