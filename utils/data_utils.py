@@ -65,8 +65,7 @@ def NormalizeComplex(dataX, normalizationMethod):
         warnings.warn('No normalization method is set')
         #return dataX
     elif normalizationMethod == 0:
-        warnings.warn('No normalization method is set')
-        #return dataX
+        return dataX
     elif normalizationMethod == 5:  # 5 median and mad
         raise Exception('Normalization method without clipping should not be used')
         flattenedPerChannel = np.reshape(normalizedMagnitudeX, (-1, normalizedMagnitudeX.shape[-1]))
@@ -276,7 +275,6 @@ class Generators():
 
             self.batch_size = dataSettings['batchSize']
             self.normalizationMethod = dataSettings['normalizationMethod']
-            self.augmentation = dataSettings['augmentation']
             
             self.nSamples = nSamples
             self.offsetSamples = offsetSamples # can only be used when nSamples is not None. Then it does not start at 0 but at the offset
@@ -300,7 +298,7 @@ class Generators():
                 self.loadMetadata = (dinoSettings["customPositionalEncoding"] is not None or dinoSettings["metadataEncoding"] is not None)
                 self.nSubbands = dataSettings['nSubbands']               
 
-                self.preprocess = PreprocessDino(globalScale,localScale, self.dinoSettings['nLocalCrops'], self.dinoSettings['teacherGlobalSize'], self.dinoSettings['studentLocalSize'], nChannels, self.normalizationMethod, mode, self.augmentation )
+                self.preprocess = PreprocessDino(globalScale,localScale, self.dinoSettings['nLocalCrops'], self.dinoSettings['teacherGlobalSize'], self.dinoSettings['studentLocalSize'], nChannels, self.normalizationMethod, mode, dataSettings['augmentation'])
                 self.dataLoader = self.loadDino
             elif self.modelType == 'gan':
                 self.dataLoader = self.loadGan
@@ -316,15 +314,10 @@ class Generators():
                 self.loadSamplesFile(samples_file, bufferAll, cacheDataset)
 
         def loadSamplesFile(self, samples_file, bufferAll, cacheDataset):
-            print()
-            print('Load samples: file {}'.format(samples_file))
             # Read the samples file
             if isinstance(samples_file, str):
                 samplesFile = pickle.load(open(samples_file, "rb"))
-                if os.environ.get('OS','') == "Windows_NT":
-                    cacheLocation = os.path.dirname(samples_file)
-                else:
-                    cacheLocation =  './tempDatasets/LOFAR_L2014581 (recording)/preprocessed/dataset250k'
+                cacheLocation = os.path.dirname(samples_file)
             else:
                 samplesFile = samples_file
 
@@ -336,6 +329,8 @@ class Generators():
                 self.frequencyMap = None
             
             # Retrieve the samples with one or more subbands from the data if desired
+            if 'subbands' not in self.dataSettings.keys():
+                self.dataSettings['subbands'] = None
             if self.dataSettings['subbands'] is not None:
                 if self.frequencyMap is not None:
                     raise Exception("Overlapping subbands are not supported with frequency mapping.")
@@ -354,7 +349,6 @@ class Generators():
                 raise Exception("OffsetSamples can only be used when nSamples is not None.")
             
             if self.nSamples is not None:
-                print("Load samples: limit the number of samples")
                 np.random.seed(0)
                 np.random.shuffle(self.samples)
                 if self.offsetSamples is None:
@@ -363,12 +357,10 @@ class Generators():
                     startIdx = self.offsetSamples
                 self.samples = self.samples[startIdx:startIdx+self.nSamples]
 
-            print("Load samples: Number of samples: {}".format(len(self.samples)))
-
             # Create the indices list for sampling
             self.indices = np.arange(len(self.samples))
             if len(self.indices)>45000 and bufferAll:
-                print("Load samples: more than 45000 samples. Buffering is disabled.")
+                print("Loading more than 45000 samples. Buffering is disabled.")
                 bufferAll = False
 
             # Always create a hash such that the samples are verifiable in the pipeline
@@ -396,28 +388,31 @@ class Generators():
                     
                     if self.loadMetadata:
                         self.metadata = self.cacheDataset['/metadata']
-                else:
-                    if cacheDataset:
-                        print("Load samples: cache file does not exist, create: "+self.cacheFilename)
-                    else:
-                        print("Load samples: cache file does not exist, buffering: "+self.cacheFilename)
-                    names,positions,frequencies,times,uvws,timeStartStep,self.dataX,self.dataY,setMetadata = utils.functions.sampleFromH5(self.h5SetsLocation, self.samples, self.frequencyMap, verbose=True, standardize=False)
-                    self.metadata = list(zip(frequencies, timeStartStep))
+                    return
+        
 
-                    if cacheDataset:
-                        cacheSet = h5py.File(self.cacheFilename, 'w')
-                        cacheSet.create_dataset('dataX',data=self.dataX)
-                        cacheSet.create_dataset('dataY',data=self.dataY)
-                        if self.loadMetadata:
-                            cacheSet.create_dataset('metadata',data=self.metadata)
-                        cacheSet.close()
-                        self.cacheDataset = h5py.File(self.cacheFilename, 'r')
-                    else:
-                        self.cacheDataset = {}
-                        self.cacheDataset['/dataX'] = self.dataX
-                        self.cacheDataset['/dataY'] = self.dataY
-                        if self.loadMetadata:
-                            self.cacheDataset['/metadata'] = self.metadata
+            print("Load samples: cache file does not exist, start loading from h5 sets.")
+            sampledData = utils.functions.sampleFromH5(self.h5SetsLocation, self.samples, self.frequencyMap, verbose=True, standardize=False)
+            if sampledData is None:
+                raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 sets or cache file {}".format(self.samplesHash))
+
+            names,positions,frequencies,times,uvws,timeStartStep,self.dataX,self.dataY,setMetadata = sampledData
+            self.metadata = list(zip(frequencies, timeStartStep))
+
+            if cacheDataset:
+                cacheSet = h5py.File(self.cacheFilename, 'w')
+                cacheSet.create_dataset('dataX',data=self.dataX)
+                cacheSet.create_dataset('dataY',data=self.dataY)
+                if self.loadMetadata:
+                    cacheSet.create_dataset('metadata',data=self.metadata)
+                cacheSet.close()
+                self.cacheDataset = h5py.File(self.cacheFilename, 'r')
+            else:
+                self.cacheDataset = {}
+                self.cacheDataset['/dataX'] = self.dataX
+                self.cacheDataset['/dataY'] = self.dataY
+                if self.loadMetadata:
+                    self.cacheDataset['/metadata'] = self.metadata
 
         def loadh5(self, h5SetsLocation):
             if self.loadMetadata:
@@ -765,6 +760,8 @@ class Generators():
                 dataReal = normalizedComplexX.real
                 dataImag = normalizedComplexX.imag
                 normalizedX = np.concatenate([dataReal,dataImag],axis=-1)
+            elif self.nChannels == -1:
+                normalizedX = normalizedComplexX
             else:
                 raise Exception('Invalid number of channels')
             return normalizedX, batchY
@@ -805,6 +802,13 @@ class Generators():
             names = np.asarray(names)
             metadata = [names,positions, frequencies,times]
             return metadata
+
+        def getItems(self, startIdx=0, stopIdx=None):
+            if stopIdx is None:
+                stopIdx = len(self.samples)
+            sampleList = list(range(startIdx,stopIdx))
+            data = self.dataLoader(sampleList)
+            return data
 
         def __len__(self):
             return int(np.floor(len(self.indices) / self.batch_size))

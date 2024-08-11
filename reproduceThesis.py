@@ -98,6 +98,10 @@ import unsupervised.ica_pca_svd_features as dimensionReduction
 # - Add model parameters of RFI-GAN and DiMoGAN to models
 # - Remove os environment CUDA everywhere
 # - In copied code from hera_sim and HIDE, copy license and or write in top of file that it is not my work
+# - Make sure that all hashed data and samples files are available. But them in the correct location and change the path
+# - Make a data folder, also in the utils root location
+# - Make a README file with the files to set up, explanation about hashes and running the code. Also that it automatically uses files if they are available
+# - Search for os.environ.get('OS','') and remove all
 
 kValues = list(range(5,51))
 
@@ -124,7 +128,7 @@ ganExperimentNames = [{'exp':0,     'name': 'Skip connections disabled'},
                       {'exp':60,    'name': 'DiMoGAN 6000'},]
 
 # RFI-GAN experiments
-ganExperiments = range(8)
+ganExperiments = [1] # range(8) #TODO: if disabled, enable again
 
 # DINO experiments
 dinoVitExperiments = list(range(1,17))
@@ -137,12 +141,12 @@ diMoGANExperiments = [10,11,12,20,21,30,31,35,40,41,42,60]
 
 
 # NOTE: setting actions to False will disable it, but may raise an error if the required data is not available
-trainRfiGan = True
+trainRfiGan = False
 trainDinoSearch = False
 trainDinoEvaluate = False
 trainDiMoGan = False
 
-predictMetricsRfiGan = False # Requires saved parameters of the RFI-GAN models
+predictMetricsRfiGan = True # Requires saved parameters of the RFI-GAN models
 predictMetricsDiMoGan = False # Requires saved parameters of the DiMoGAN models
 kmeansSearchDino = False # Requires embedding of evaluation DINO models
 calculateIcaPcaSvdFeatures = False
@@ -193,25 +197,30 @@ def methods_3_1():
     os.makedirs(resultsLocation, exist_ok=True)
 
     # 3.1.4: Generate sample files for train and validation data
-    # sample_datasets.SampleH5() # TODO: check if files exist
+    sample_datasets.SampleH5() # TODO: check if files exist
 
     # 3.1.2: Plot LOFAR observation for all subbands the amplitude and phase
-    plot_H5.plotH5Set(antennasA=["CS002HBA1"], antennasB=["CS005HBA1"], plotType='rgb', plotLocation = resultsLocation)
+    h5SetsLocation = utils.functions.getH5SetLocation("LOFAR_L2014581 (recording)")
+    h5Sets = [filename for filename in os.listdir(h5SetsLocation) if filename.endswith('.h5')]
+    if len(h5Sets) == 0:
+        print("(Not all) h5 files found in the location: {}. Skipping plotting data visualization".format(h5SetsLocation))
+    else:
+        plot_H5.plotH5Set(antennasA=["CS002HBA1"], antennasB=["CS005HBA1"], plotType='rgb', plotLocation = resultsLocation)
 
     # 3.1.2: Plot AOFlagger reference truth labels
-    data_properties.PlotAoflaggerExamples(resultsLocation) # Example 89 is used in the thesis
+    data_properties.PlotAoflaggerExamples(resultsLocation) # Example 89 is used in the thesis TODO: propose 85 as alternative in thesis?
 
     # 3.1.2: Plot statistics of the datasets. Print avarage RFI and plot the percentage of RFI per subband
     data_properties.PlotRfiPercentagePerSubband(resultsLocation)
 
     # 3.1.3: Plot RFI phenomena based on the AOFlagger label
-    data_properties.PlotRfiPhenomena(resultsLocation) # Example 3 is used in the thesis
+    data_properties.PlotRfiPhenomena(resultsLocation) # Example 3 is used in the thesis TODO: propose 15 as alternative in thesis?
 
     # 3.1.4: Plot for each normalization method the distribution of pixels with amplitudes
-    data_properties.PlotAmplitudesHistogramNormalizations(resultsLocation)
+    data_properties.PlotAmplitudesHistogramNormalizations(resultsLocation) # TODO: replace image in report
 
     # 3.1.4: Plot normalization examples for mean, median and none
-    data_properties.PlotNormalizedExamples(resultsLocation) # TODO: As alternative examples: 54, 92, 98?
+    data_properties.PlotNormalizedExamples(resultsLocation) # Figure 16 are samples: 59,58,116
 
 def results_4_1():
     ### 4 Results
@@ -224,7 +233,7 @@ def results_4_1():
 
     # 4.1: Train gan experiments 0-7 and test them on the test set
     for ganExperiment in ganExperiments:
-        if trainRfiGan: 
+        if trainRfiGan:
             gan_train.RepeatTrain(experiment=ganExperiment, nRepetitions=5)
         if predictMetricsRfiGan == False:
             continue

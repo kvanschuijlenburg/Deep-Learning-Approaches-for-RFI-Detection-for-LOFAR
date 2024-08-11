@@ -1,6 +1,3 @@
-from datetime import datetime
-from math import sin
-import math
 import os
 import pickle
 import random
@@ -12,17 +9,14 @@ from tqdm import tqdm
 
 import utils as utils
 
-machineLocal = os.environ.get('OS','') == "Windows_NT"
-
+# TODO: change back
 # plotsLocation = "./plots"
 # modelsLocation = "./models"
-modelsLocation = "D:\\modelMinimumRequired" # TODO: change back
+# datasetsLocation = "./datasets"
+datasetsLocation = "D:\\requiredData\\data"
+modelsLocation = "D:\\requiredData\\models" 
 plotsLocation = "D:\\plots" 
 
-if machineLocal:
-    datasetsLocation = "D:/datasets"
-else:
-    datasetsLocation = './tempDatasets'
 
 def getMeasurementSetLocation(datasetName):
     datasetLocation = os.path.join(datasetsLocation,datasetName,'ms')
@@ -37,9 +31,9 @@ def getH5SetLocation(datasetName):
     
 def getDatasetLocation(observationName, fileName = None, subdir=None):
     if subdir is None:
-        datasetLocation = os.path.join(datasetsLocation,observationName,'preprocessed')
+        datasetLocation = os.path.join(datasetsLocation,observationName,'cache')
     else:
-        datasetLocation = os.path.join(datasetsLocation,observationName,'preprocessed', subdir)
+        datasetLocation = os.path.join(datasetsLocation,observationName,'cache', subdir)
     if not os.path.exists(datasetLocation): os.makedirs(datasetLocation)
     
     if not fileName is None:
@@ -57,10 +51,7 @@ def getPlotLocation(datasetName=None, subfolderName = None, plotRoot = plotsLoca
     os.makedirs(plotLocation, exist_ok=True)
     return plotLocation
 
-def getModelLocation(modelName, subfolderName = None, modelRoot = modelsLocation):
-    if not machineLocal: 
-        modelRoot = modelsLocation
-        
+def getModelLocation(modelName, subfolderName = None, modelRoot = modelsLocation):       
     os.makedirs(modelRoot, exist_ok=True)
     if subfolderName is None:
         modelSaveDir = os.path.join(modelRoot,modelName)
@@ -502,6 +493,9 @@ def sampleObservations(h5SetsLocation, nSamples, timeWindow=None, strategy = 'eq
     """
     h5Sets = [filename for filename in os.listdir(h5SetsLocation) if filename.endswith('.h5')]
 
+    if len(h5Sets) == 0:
+        raise Exception("No h5 files found in {}".format(h5SetsLocation))
+
     datasetFrequencies = []
     for h5Set in h5Sets:
         antennaData, subbandFrequencies, time = getMetadata(os.path.join(h5SetsLocation, h5Set))
@@ -740,8 +734,13 @@ def sampleFromH5(h5SetsLocation, sampleList, frequencySubbandMapping=None,timeWi
         # Check if antennas are the same
         if indexA == indexB:
             raise Exception("Antenna A = %s and Antenna B = %s. Antennas cannot be the same")
+        
+        h5Filename = os.path.join(h5SetsLocation,h5Set)
+        if not os.path.exists(h5Filename):
+            print("File %s does not exist" % h5Filename)
+            return None
 
-        with h5py.File(os.path.join(h5SetsLocation,h5Set), 'r') as f5file:
+        with h5py.File(h5Filename, 'r') as f5file:
             # Get metadata only from the first subband
             metadata_group = f5file['Metadata']
             antenna_name = [tempName.astype(str) for tempName in metadata_group['ANTENNA_NAME'][:]]

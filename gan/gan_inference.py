@@ -169,10 +169,10 @@ def CalculateMetrics(experiment,dataset, run=0):
         evaluationFilename = os.path.join(experimentDir ,'evaluation_valTest.pkl')
     
     if not os.path.exists(evaluationFilename):
-        print("No evaluation found for {}. Start predicting model".format(evaluationFilename))
+        print("No evaluation found for {}, run {}. Start predicting model".format(ganName, run))
         predictModel(experiment, run, dataset, evaluationFilename = evaluationFilename)
     else:
-        print("Evaluation already done for {}. Skip".format(evaluationFilename))
+        print("Evaluation already done for {}, run {}. Skip".format(ganName, run))
 
 def calcEmbedding(experiment, dataset ,run=None):
     # Get experiment settings and model name

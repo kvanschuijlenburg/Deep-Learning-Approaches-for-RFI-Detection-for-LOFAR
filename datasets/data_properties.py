@@ -14,12 +14,9 @@ trainSamplesFilename = utils.functions.getDatasetLocation(datasetName, 'trainSam
 
 def PlotAoflaggerExamples(plotsLocation):
     nSamples = 100
-    sampleList = pickle.load(open(trainSamplesFilename, "rb"))
-    sampleList = sampleList[0][:nSamples]
-
-    names,positions,frequencies,times,uvws,sinTimes,observations,labels,setMetadata = utils.functions.sampleFromH5(h5SetsLocation, sampleList, standardize=False)
-    normalizedObservations = utils.datasets.NormalizeComplex(observations, 12)
-    colorImages = utils.datasets.Generators.UniversalDataGenerator.ConvertToImage(None, normalizedObservations)
+    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'train', -1, trainSamplesFilename,dataSettings={'batchSize':10, 'normalizationMethod':12}, bufferAll=True, cacheDataset=True, nSamples = 500) # NOTE: for 500 samples there is a cache file
+    normalizedObservations, labels = dataGenerator.getItems(stopIdx = nSamples)
+    colorImages = dataGenerator.ConvertToImage(normalizedObservations)
     
     aoflaggerExamplesPlotsLocation = os.path.join(plotsLocation, 'AOFlagger examples')
     os.makedirs(aoflaggerExamplesPlotsLocation, exist_ok=True)
@@ -46,14 +43,20 @@ def PlotAoflaggerExamples(plotsLocation):
         plt.close()
 
 def PlotRfiPercentagePerSubband(plotsLocation):
-    nSamples = 5000
+    nSamples = 6000 # NOTE: for 6000 samples there is a cache file
     sampleList = pickle.load(open(trainSamplesFilename, "rb"))
     sampleList = sampleList[0][:nSamples]
 
-    names,positions,frequencies,times,uvws,sinTimes,observations,labels,setMetadata = utils.functions.sampleFromH5(h5SetsLocation, sampleList, standardize=False)
+    sampledData = utils.functions.sampleFromH5(h5SetsLocation, sampleList, standardize=False)
+    if sampledData is None:
+        print("(Not all) h5 files available. Skipping calculating RFI percentage per subband.")
+        return
+
+    # TODO: from the subband index is the samples file can the frequencies be retried. However, this is quite hacky
+    names,positions,frequencies,times,uvws,sinTimes,observations,labels,setMetadata = sampledData
     labels[:,0,:] = 0
 
-    nVisibilitiesPerSample = observations.shape[1] * observations.shape[2]
+    nVisibilitiesPerSample = labels.shape[1] * labels.shape[2]
     nRfiPerSample = np.sum(labels,axis=(1,2))
     
     # Total RFI statistics
@@ -85,7 +88,8 @@ def PlotRfiPhenomena(plotsLocation):
     sampleList = pickle.load(open(trainSamplesFilename, "rb"))
     sampleList = sampleList[0][:nSamples]
 
-    names,positions,frequencies,times,uvws,sinTimes,observations,labels,setMetadata = utils.functions.sampleFromH5(h5SetsLocation, sampleList, standardize=False)
+    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'train', -1, trainSamplesFilename,dataSettings={'batchSize':10, 'normalizationMethod':0}, bufferAll=True, cacheDataset=True, nSamples = 500) # NOTE: for 500 samples there is a cache file
+    _, labels = dataGenerator.getItems(nSamples)
     rfiResults, rfiRatioResults, rfiCategories, dataY, dataRfiWeak, dataRfiY, dataRfiX = utils.datasets.calcRfiTypesPerSample(labels,returnDebugImages=True)
 
     rfiTypePlotsLocation = os.path.join(plotsLocation, 'rfi phenomena')
@@ -124,23 +128,24 @@ def PlotRfiPhenomena(plotsLocation):
 
 def PlotAmplitudesHistogramNormalizations(plotsLocation, normalizations = [{'index':0, 'name': 'Scaled by log$_{10}$'},{'index':12, 'name': 'Median and MAD'},{'index':13, 'name': 'Mean and SD'}]):
     nSamples = 1000
-    sampleList = pickle.load(open(trainSamplesFilename, "rb"))
-    sampleList = sampleList[0][:nSamples]
-    frequencyMap = None
+    # sampleList = pickle.load(open(trainSamplesFilename, "rb"))
+    # sampleList = sampleList[0][:nSamples]
+
     
-    print("Sample training samples from h5 files")
-    _,_,_,_,_,_,unscaledObservations,_,_ = utils.functions.sampleFromH5(h5SetsLocation, sampleList,frequencyMap, standardize=False, normalizing=False)
-    _,_,_,_,_,_,observations,labels,_ = utils.functions.sampleFromH5(h5SetsLocation, sampleList,frequencyMap, standardize=False, normalizing=True)
+    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'train', -1, trainSamplesFilename,dataSettings={'batchSize':10, 'normalizationMethod':0}, bufferAll=True, cacheDataset=True, nSamples = nSamples) # NOTE: for 500 samples there is a cache file
+    observations, labels = dataGenerator.getItems()
+    # reverse the log10 and add the 1 again to the observations
+    unscaledObservations = np.power(10,np.abs(observations))-1
 
     bins = 500
-    unscaledMagnitudes = np.abs(unscaledObservations).flatten()
-    unscaledRfiMagnitudes = np.abs(unscaledObservations[labels==1]).flatten()
-    unscaledBackgroundMagnitudes = np.abs(unscaledObservations[labels==0]).flatten()
+    unscaledMagnitudes = unscaledObservations.flatten()
+    unscaledRfiMagnitudes = unscaledObservations[labels==1].flatten()
+    unscaledBackgroundMagnitudes = unscaledObservations[labels==0].flatten()
     unscaledHistogram = np.histogram(unscaledMagnitudes, bins=bins)
     unscaledRfiHistogram = np.histogram(unscaledRfiMagnitudes, bins=bins)
     unscaledRackgroundHistogram = np.histogram(unscaledBackgroundMagnitudes, bins=bins)
 
-    yLimit = nSamples*1e3
+    yLimit = nSamples*1.2e3
 
     fig,ax = plt.subplots(nrows=1,ncols = 1+len(normalizations),figsize=(20,5))
     ax[0].set_title('Raw data')
@@ -183,16 +188,21 @@ def PlotNormalizedExamples(plotsLocation, normalizations = [{'index':0, 'name': 
     normalizationPlotslocation = os.path.join(plotsLocation, 'Normalized examples')
     os.makedirs(normalizationPlotslocation, exist_ok=True)
 
-    nSamples = 100
+    nSamples = 200
     sampleList = pickle.load(open(trainSamplesFilename, "rb"))
     sampleList = sampleList[0][:nSamples]
     frequencyMap = None
     
-    _,_,_,_,_,_,observations,_,_ = utils.functions.sampleFromH5(h5SetsLocation, sampleList,frequencyMap, standardize=False, normalizing=True)
+    
+    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'train', -1, trainSamplesFilename,dataSettings={'batchSize':10, 'normalizationMethod':0}, bufferAll=True, cacheDataset=True, nSamples = 500) # NOTE: for 500 samples there is a cache file
+    #_,_,_,_,_,_,observations,_,_ = utils.functions.sampleFromH5(h5SetsLocation, sampleList,frequencyMap, standardize=False)
 
     for plotIdx, normalization in enumerate(normalizations):
         normalizationMethod = normalization['index']
         normalizationName = normalization['name']
+        
+        dataGenerator.normalizationMethod = normalizationMethod
+        observations, _ = dataGenerator.getItems(stopIdx = nSamples)
 
         if normalizationMethod == 0:
             magnitudeX = np.abs(observations)
@@ -201,8 +211,8 @@ def PlotNormalizedExamples(plotsLocation, normalizations = [{'index':0, 'name': 
             normalizeFactor = np.divide(scaledMagnitudeX, magnitudeX, out=np.zeros_like(magnitudeX,dtype = np.float32), where=magnitudeX!=0)
             normalizedComplexX = np.multiply(observations,normalizeFactor)
         else:
-            normalizedComplexX = utils.datasets.NormalizeComplex(observations, normalizationMethod)
-        normalizedColor = utils.datasets.Generators.UniversalDataGenerator.ConvertToImage(None, normalizedComplexX)
+            normalizedComplexX = observations
+        normalizedColor = dataGenerator.ConvertToImage(normalizedComplexX)
 
         for sampleIdx, colorImage in enumerate(normalizedColor):
             colorImage = (255*colorImage).astype(np.uint8)

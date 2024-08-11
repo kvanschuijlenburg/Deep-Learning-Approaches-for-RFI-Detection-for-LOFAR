@@ -7,7 +7,7 @@ import utils as utils
 nTrainingSamples = 250000 # The first 6000 is used as train SL
 nValSamples = 25000 # The first 1000 is used as val SL, the first 6000 is used as val SSL, 6000-7000 is used as test set
 nTestSamples = 2775
-targetTrainTestSubDir = 'protect_dataset250k' # TODO: remove protect in final model
+targetTrainTestSubDir = 'dataset250k' # TODO: remove protect in final model
 targetTrainSetName = 'trainSamples'
 targetValSetName = 'valSamples'
 
@@ -25,9 +25,11 @@ def SampleH5():
     trainSamplesFilename = os.path.join(preprocessedLocation,targetTrainTestSubDir, targetTrainSetName)
     valSamplesFilename = os.path.join(preprocessedLocation,targetTrainTestSubDir, targetValSetName)
     if os.path.exists(trainSamplesFilename):
-        raise Exception("Train samples already exist. Please remove the file to sample")
+        print("Train samples already exist. Delete the file to sample it again.")
+        return
     if os.path.exists(valSamplesFilename):
-        raise Exception("Val samples already exist. Please remove the file to  sample")
+        print("Val samples already exist. Delete the file to sample it again.")
+        return
 
     print("Start random sampling")
     nSamples = nTrainingSamples + nValSamples
