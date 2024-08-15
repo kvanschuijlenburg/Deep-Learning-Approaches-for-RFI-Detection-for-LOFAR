@@ -62,12 +62,11 @@ def train(experiment, run=None):
 
     # Instantiate the model
     if ganModelSettings['loadDinoEncoder'] is not None:
-        dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'] ,False,False)
+        dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'])
     else:
         dinoModelSettings
     ganLoader = GanLoader(dataSettings, ganModelSettings, plotsLocation, modelName,dataShape=dataShape, run=run, dinoModelSettings=dinoModelSettings)
     ganLoader.makeModel(metadataStyleVectorSize)
-    ganLoader.summary()
     startEpoch = ganLoader.restoreWeights()
 
     if cacheDinoEmbedding and ganModelSettings['loadDinoEncoder'] is not None:
@@ -90,7 +89,7 @@ def train(experiment, run=None):
                         cacheVal = False
 
             if cacheTrain or cacheVal:
-                dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'] ,False,False)
+                dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'])
                 dinoLoader = DinoLoader(dinoModelSettings, dinoDataSettings, dinoGanModelSettings)
                 dinoTeacher, loadedEpoch = dinoLoader.loadTeacher(ganModelSettings['loadDinoEpoch'])
                 print("Loaded DINO teacher to cache train or val from epoch {}.".format(loadedEpoch))
@@ -121,11 +120,10 @@ def train(experiment, run=None):
             valGenerator.AppendDinoFeatures(valDinoFeatures)
             ganLoader.gan.generator.concatDinoEncoder = True
 
-    print()
     if startEpoch == 0:
         if ganModelSettings['loadDinoEncoder'] is not None:
             print("No checkpount found. Loading encoder weights from DINO model.")
-            dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'] ,False,False)
+            dinoModelSettings,dinoDataSettings,dinoGanModelSettings = GetDinoExperiment(ganModelSettings['loadDinoEncoder'])
             dinoLoader = DinoLoader(dinoModelSettings, dinoDataSettings, dinoGanModelSettings)
             encoderWeights, loadedDinoEpoch = dinoLoader.loadEncoderWeights(ganModelSettings['loadDinoEpoch'])
             if loadedDinoEpoch == 0:

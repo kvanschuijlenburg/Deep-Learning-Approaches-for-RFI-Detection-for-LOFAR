@@ -301,7 +301,7 @@ class h5Plotter:
 
 
         [antennaA, antennaB, posA, posB] = self.metaData
-        saveLocation = os.path.join(self.plotLocation,'Transparant')#"D:\\plots\\LOFAR_L2014581 (recording)\\h5\\testRfiBackground"
+        saveLocation = os.path.join(self.plotLocation,'Transparant')
         os.makedirs(saveLocation, exist_ok=True)
         transparantBackground.save(os.path.join(saveLocation,'{}_{}_transparantBackground.png').format(antennaA,antennaB))
         transparantBackgroundInverse.save(os.path.join(saveLocation,'{}_{}_transparantBackgroundInverse.png').format(antennaA,antennaB))
@@ -823,7 +823,6 @@ def tsneVisualization(tsneFeatures, dataX, plotDirectory, plotTitle, dpi=100):
     # save canvas as PIL
     canvas_image = Image.fromarray(canvas)
     canvas_image.save(os.path.join(plotDirectory, plotTitle + ".png"))
-    print()
 
 def tsneClusterScatter(tsneFeatures, plotDirectory, plotTitle, clusters,dpi=100, plotCenters = False, legend = None, remappedLabels = None, colorMap = None):
     #plt.figure(figsize=(10, 10))
@@ -884,8 +883,8 @@ def tsneScatter(tsneFeatures, plotDirectory, plotTitle, dpi=100):
     plt.close()
 
 def tsneClustersWithSilhouette(tsneFeatures, plotDirectory, plotTitle, clusters, kClusters,sampleSilhouetteValue,  silhouette_avg, dpi=300, plotCenters = False):
-        # Create a subplot with 1 row and 2 columns
-        # TODO: code copied from https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html#:~:text=The%20silhouette%20plot%20displays%20a,of%20%5B%2D1%2C%201%5D.
+        # This function is based on code written by scikit-learn authors found at
+        # https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html#:~:text=The%20silhouette%20plot%20displays%20a,of%20%5B%2D1%2C%201%5D.
         
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches(21, 10)
@@ -920,7 +919,6 @@ def tsneClustersWithSilhouette(tsneFeatures, plotDirectory, plotTitle, clusters,
         ax1.set_yticks([])  # Clear the yaxis labels / ticks
 
         # 2nd Plot showing the actual clusters formed 
-        # TODO: make a common function with tsneScatter
         colors = cm.nipy_spectral(clusters.astype(float) / len(np.unique(clusters)))
         colors=np.asarray(colors)
         ax2.scatter(tsneFeatures[:, 0], tsneFeatures[:, 1], marker=".", s=50, alpha=1, lw=0, c=colors, edgecolor="k")

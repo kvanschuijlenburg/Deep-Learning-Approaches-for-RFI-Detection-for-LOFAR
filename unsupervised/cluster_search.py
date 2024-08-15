@@ -59,10 +59,10 @@ def ClusterSearchEmbeddings(modelDir, algorithm, modelType, kClusters=list(range
         embeddingPath = os.path.join(modelDir, 'embedding')
 
     if not os.path.exists(embeddingPath):
-        raise Exception("No embedding directory found in {}".format(modelDir))
+        raise Exception("No embedding directory found at {}.".format(modelDir))
     embeddingFiles = os.listdir(embeddingPath)
     if len(embeddingFiles) == 0:
-        raise Exception("No embedding files found in {}".format(embeddingPath))
+        raise Exception("No embedding files found in {}. Predict embedding first.".format(embeddingPath))
     
     # Create the directory for the cluster results
     if algorithm == 'kmeans':
@@ -166,7 +166,7 @@ def PlotCentroidsSamples(modelDir, plotsDir, algorithm, modelType, nFeaturesOrEp
 
 def PlotMaxSilhouetteScores(clusterSearch, searchName = 'kmeans', plotLocation = None, valData = False):
     if plotLocation is None:
-        plotsLocation = utils.functions.getPlotLocation(datasetName, os.path.join(modelName, searchName),plotRoot = "D:\\plots")
+        plotsLocation = utils.functions.getPlotLocation(datasetName, os.path.join(modelName, searchName))
     else:
         plotsLocation = plotLocation
     maxValuePerk = {}
@@ -311,11 +311,15 @@ def wwTest(maxValuesOne, maxValuesTwo):
     muR = ((2*n1*n2)/n) + 1
 
     # test statistic: R vs muR
-    wwZ = (R - muR) / seR
+    if seR == 0.0:
+        p_values_one = np.nan
+        p_values_two = np.nan
+    else:
+        wwZ = (R - muR) / seR
 
-    # test the pvalue
-    p_values_one = st.norm.sf(abs(wwZ))   #one-sided
-    p_values_two = st.norm.sf(abs(wwZ))*2 #twosided
+        # test the pvalue
+        p_values_one = st.norm.sf(abs(wwZ))   #one-sided
+        p_values_two = st.norm.sf(abs(wwZ))*2 #twosided
     return p_values_one, p_values_two, R
 
 def wilcoxonTest(valuesOne, valuesTwo):

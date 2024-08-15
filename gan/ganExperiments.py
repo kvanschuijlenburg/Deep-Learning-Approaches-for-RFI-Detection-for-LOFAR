@@ -106,7 +106,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':1000,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'freezeEncoderEpochs': 500,
             },
@@ -120,7 +120,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':700,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'concatDino':True,
             },
@@ -136,7 +136,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -151,7 +151,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'relu',
@@ -166,7 +166,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -182,7 +182,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -199,7 +199,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -217,7 +217,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -236,7 +236,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -252,7 +252,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -270,7 +270,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -286,7 +286,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -304,7 +304,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -323,7 +323,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -339,7 +339,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -355,7 +355,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -372,7 +372,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -390,7 +390,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modConvEncoder':True,
@@ -408,7 +408,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':200,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modConvEncoder':True,
@@ -444,7 +444,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':120,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -459,7 +459,7 @@ def GetExperiment(experiment, debug=False):
             },
             'ganSettings':{
                 'scheduledEpochs':70,
-                'loadDinoEncoder':54,
+                'loadDinoEncoder':132,
                 'loadDinoEpoch':9,
                 'modConv':True,
                 'modulatedConvActivation': 'leaky_relu',
@@ -467,27 +467,7 @@ def GetExperiment(experiment, debug=False):
                 'styleMappingNormInput':True,
             },
         }
-   
-   # 100+ debug experiments
-    elif experiment == 100: # 500 samples, modConv default
-        userSettings = {
-            'dataSettings' : {
-                'nTrainingSamples' : 500,
-                'normalizationMethod': 12,
-                'batchSize':10,
-            },
-            'ganSettings':{
-                'scheduledEpochs':200,
-                'loadDinoEncoder':54,
-                'loadDinoEpoch':9,
-                'modConv':True,
-                'modulatedConvActivation': 'leaky_relu',
-                'modConvResUpNormAdd':'scale',
 
-                # Hard-coded last activation function is None instead of leaky_relu before softmax
-                # Hard-coded learning rate equalization is now enabled
-            },
-        }     
 
     dataSettings = utils.models.defaultDataSettings.copy()
     ganModelSettings = utils.models.defaultGanModelSettings.copy()
@@ -504,7 +484,7 @@ def GetExperiment(experiment, debug=False):
     return dataSettings, ganModelSettings, dinoModelSettings
 
 def GetGanModelDir(experiment, run=None):
-    dataSettings, ganModelSettings, dinoModelSettings = GetExperiment(experiment,False)
+    dataSettings, ganModelSettings, dinoModelSettings = GetExperiment(experiment)
     modelName = utils.models.getGanModelName(ganModelSettings, dataSettings, dinoModelSettings)
     if run is None:
         mdelDir, _= utils.functions.getModelLocation(os.path.join('gan',modelName))

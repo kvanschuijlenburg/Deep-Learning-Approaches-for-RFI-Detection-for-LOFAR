@@ -43,14 +43,13 @@ def PlotTsne(experiment, epoch, plotsLocation, valData = True, prefixSavename = 
     utils.plotter.tsneVisualization(tsneFeatures, imageX, plotsLocation, '{}tSNE visualization epoch={}, perp={}'.format(prefixSavename,epoch,perplexity))
 
 def CalcEmbedding(experiment, epoch, valData=False):
-    dinoModelSettings,dataSettings,ganModelSettings = GetExperiment(experiment,False, False)
+    dinoModelSettings,dataSettings,ganModelSettings = GetExperiment(experiment, False)
     modelName = utils.models.getDinoModelName(dinoModelSettings,dataSettings,ganModelSettings)
-    print("Calc embedding for epoch {} of experiment: {}".format(epoch,modelName))
 
     # Get model and dataset locations
     modelDir, _ = utils.functions.getModelLocation(os.path.join('dino',modelName))
     h5SetsLocation = utils.functions.getH5SetLocation(dataSettings['datasetName'])
-    plotLocation = utils.functions.getPlotLocation(dataSettings['datasetName'], modelName,plotRoot = "D:\\plots")
+    plotLocation = utils.functions.getPlotLocation(dataSettings['datasetName'], modelName)
     if valData:
         samplesFilename = utils.functions.getDatasetLocation(dataSettings['datasetName'], 'valSamples',subdir=dataSettings['datasetSubDir'])
         embeddingDir = os.path.join(modelDir, "embedding_val")
@@ -61,8 +60,10 @@ def CalcEmbedding(experiment, epoch, valData=False):
     os.makedirs(embeddingDir, exist_ok=True)
     embeddingFilename = os.path.join(embeddingDir, 'embedding_epoch={}.pkl'.format(epoch))
     if os.path.exists(embeddingFilename):
-        print("Embedding {} already exists.".format(embeddingFilename))
+        print("Embedding of experiment {}, epoch {} already exist".format(modelName, epoch))
         return
+    
+    print("Calculate embedding of experiment {}, epoch {}.".format(modelName, epoch))
     
     # Load model and data
     dinoLoader = DinoLoader(dinoModelSettings, dataSettings, ganModelSettings)
@@ -70,13 +71,12 @@ def CalcEmbedding(experiment, epoch, valData=False):
     assert loadedEpoch == epoch
 
     dataSettings['batchSize'] = overideBatchSize
-    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dino', 'original',dinoModelSettings['nChannels'] ,samplesFilename, dinoModelSettings, dataSettings=dataSettings, nSamples=6000)
+    dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dino', 'original',dinoModelSettings['nChannels'] ,samplesFilename, dinoModelSettings, dataSettings=dataSettings, bufferAll = True, cacheDataset=True,nSamples=6000)
     samplesHash = dataGenerator.samplesHash
 
     epochPlotsLocation = os.path.join(plotLocation, 'results_epoch_{}'.format(loadedEpoch))
     os.makedirs(epochPlotsLocation, exist_ok=True)
 
-    print("Calculate embedding")
     embedding = []
     for batchX in tqdm(dataGenerator):
         embedding.extend(model.predictEmbedding(batchX))

@@ -44,17 +44,13 @@ def clusterEmbeddings(compareModels):
             clustersFilename = os.path.join(os.path.join(model['modelDir'],'kmeans_clusters'), 'clusters_nFeatures={}_k={}.pkl'.format(model['nFeatures'],kClusters))
             oddEvenClusteringFilename = os.path.join(os.path.join(model['modelDir'],'kmeans_clusters'), 'oddEven_clusters_nFeatures={}_k={}.pkl'.format(model['nFeatures'],kClusters))
         os.makedirs(os.path.join(model['modelDir'],'kmeans_clusters'),exist_ok=True)
-        if os.path.exists(clustersFilename):
-            print("Clusters for {} already exist.".format(methodName))
-        else:
+        if os.path.exists(clustersFilename)==False:
             print("Start k-means clustering for {}.".format(methodName))
             nFeaturesOrEpoch, embeddingX, savedHash = utils.functions.LoadEmbedding(embeddingFilename)
             clusters, centroids = clusterAlgorithms.kmeans(embeddingX, kClusters, returnCentroids = True)
             utils.functions.SaveClusters(clustersFilename, nFeaturesOrEpoch, clusters, centroids,savedHash)
 
-        if os.path.exists(oddEvenClusteringFilename):
-            print("OddEven clusters for {} already exist.".format(methodName))
-        else:
+        if os.path.exists(oddEvenClusteringFilename)==False:
             print("Start odd-even clustering for {}.".format(methodName))
             nFeaturesOrEpoch, embeddingX, savedHash = utils.functions.LoadEmbedding(embeddingFilename)
 
@@ -63,6 +59,7 @@ def clusterEmbeddings(compareModels):
             oddClusters, oddCentroids = clusterAlgorithms.kmeans(oddEmbedding, kClusters, returnCentroids = True)
             evenClusters, evenCentroids = clusterAlgorithms.kmeans(evenEmbedding, kClusters, returnCentroids = True)
             utils.functions.SaveOddEvenClusters(oddEvenClusteringFilename, nFeaturesOrEpoch, oddClusters, oddCentroids, evenClusters, evenCentroids, savedHash)
+        print("(Odd-even) clusters exist for {}.".format(methodName))
             
 def tsneEmbeddings(compareModels):
     for model in compareModels:
@@ -79,7 +76,7 @@ def tsneEmbeddings(compareModels):
             tsneFilename = os.path.join(os.path.join(model['modelDir'],'tsne_features'), 'tsne_nFeatures={}_perplexity={}.pkl'.format(model['nFeatures'],tsnePerplexity))
         
         if os.path.exists(tsneFilename):
-            print("tsne features for {} already exist.".format(methodName))
+            print("t-SNE features exist for {}.".format(methodName))
             continue
         
         print("Start tsne for {}.".format(methodName))
@@ -88,7 +85,7 @@ def tsneEmbeddings(compareModels):
         tsneFeatures = tsne.tsne(embedding, perplexity=tsnePerplexity)
         utils.functions.SaveTsneFeatures(tsneFilename, tsneFeatures, nFeaturesOrEpoch, savedHash)
 
-class GuidedClustering():
+class ClusteringPipeline():
     class Method:
         def __init__(self, method, modelName, modelSubdir, embeddingX, clusters,centroids, oddClusters, oddCentroids, evenClusters, evenCentroids, kClusters, tsneFeatures):
             self.method = method
@@ -122,7 +119,7 @@ class GuidedClustering():
         start_time = time.time()
         self.loadDatasetData()
         self.methodNames = []
-        self.method: Dict[str, GuidedClustering.Method] = {}
+        self.method: Dict[str, ClusteringPipeline.Method] = {}
         for model in models:
             methodName, methodData = self.loadMethod(model)
             self.methodNames.append(methodName)
@@ -132,19 +129,18 @@ class GuidedClustering():
 
         self.finalClusters = -1*np.ones(len(self.method[methodName].clusters),dtype=np.uint32)
         self.lastCluster = -1
-
-        print("Loading dataset and models took: %s seconds" % (time.time() - start_time))
+        # print("Loading dataset and models took: %s seconds" % (time.time() - start_time))
 
     def loadDatasetData(self):
         pipelineDatasetFilename = os.path.join(self.pipelineModelDir, 'pipelineDatasetData.pkl')
 
         if os.path.exists(pipelineDatasetFilename):
-            print("Loading dataset from pipeline cache.")
+            
             with open(pipelineDatasetFilename, 'rb') as file:
                 self.dataX, self.dataY, self.metadata, self.samplesHash = pickle.load(file)
             return
 
-        print("Loading dataset from generator.")
+        print("No cache file available for the clustering pipeline. Load data from h5 files.")
         self.dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'original', 8 ,trainSamplesFilename, dataSettings=dataSettings, cacheDataset=True, bufferAll=True, nSamples=6000)
         loadedMetadata = self.dataGenerator.getMetadata()
         self.metadata = list(zip(*loadedMetadata))
@@ -193,7 +189,7 @@ class GuidedClustering():
         embedding = np.asarray(embedding)
         tsneFeatures = np.asarray(tsneFeatures)
         clusters = np.asarray(clusters)
-        methodData = GuidedClustering.Method(model['method'],methodName, modelSubdir, embedding, clusters, centroids, oddClusters, oddCentroids, evenClusters, evenCentroids, model['kClusters'], tsneFeatures)
+        methodData = ClusteringPipeline.Method(model['method'],methodName, modelSubdir, embedding, clusters, centroids, oddClusters, oddCentroids, evenClusters, evenCentroids, model['kClusters'], tsneFeatures)
         return methodName, methodData
 
     # individual methods
@@ -731,17 +727,17 @@ class GuidedClustering():
 
         utils.plotter.tsneClustersWithSilhouette(self.method[methodName].tsneFeatures, saveLocation, saveName, self.method[methodName].clusters, self.method[methodName].kClusters, sampleSilhouetteValue, silhouette_avg, plotCenters=True)
 
-        # # Create a subplot with 1 row and 2 columns
-        # # TODO: code copied from https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html#:~:text=The%20silhouette%20plot%20displays%20a,of%20%5B%2D1%2C%201%5D.
-
     def plotClusterTimeline(self, methodName):
+        # This function contains code from AOFlagger 3.3 by Offringa, A.R. found at
+        # https://gitlab.com/aroffringa/aoflagger/
+        # License: GPL-3.0
+
         nClusters = len(np.unique(self.method[methodName].clusters))
 
         timeStamps = []
         for sampleIndex, sample in enumerate(self.metadata):
             aipsMJD = sample[3]
 
-            #aipsMJD to jd # TODO: cite dr. offringa
             mjd = aipsMJD / (60.0 * 60.0 * 24.0)
             jd = mjd + 2400000.5
             time = np.fmod(jd + 0.5, 1.0) * 24.0
@@ -833,8 +829,6 @@ class GuidedClustering():
             dpi=300
             plt.savefig(os.path.join(self.plotsLocationCompareModels, "Rfi distribution {}".format(valueName)), dpi=dpi, bbox_inches='tight')
             plt.close()
-
-        print()
 
     def plotCoMemberClusters(self, thesisOnly = False):
         for indexOne, experimentNameOne in  enumerate(self.methodNames):
@@ -983,6 +977,8 @@ class GuidedClustering():
                             for col in range(summaryCols):
                                 startX = col*(sampleWidth+columnSpacing)
                                 image = images[row*summaryCols+col]
+                                # flip y-axis with numpy
+                                image = np.flipud(image)
                                 summaryImage[startY:startY+sampleHeight, startX:startX+sampleWidth] = image
                         summaryImage = (summaryImage*255).astype(np.uint8)
                         pilImage = Image.fromarray(summaryImage)
@@ -1191,7 +1187,7 @@ class GuidedClustering():
         plt.close()
 
 def IndividualModels(compareModels,plot=True, resultsLocation = None, thesisOnly = True):
-    clustering = GuidedClustering(compareModels, resultsLocation=resultsLocation)
+    clustering = ClusteringPipeline(compareModels, resultsLocation=resultsLocation)
 
     # Analyze individual methods
     for model in compareModels:
@@ -1200,7 +1196,7 @@ def IndividualModels(compareModels,plot=True, resultsLocation = None, thesisOnly
         else:
             methodName = '{}_epoch={}_k={}'.format(model['method'], model['epoch'],model['kClusters'])
         
-        print("Method {}".format(methodName))
+        print("Analyzing {}".format(model['method']))
 
         clustering.oddEvenClustersStatistics(methodName, (plot and thesisOnly==False))
         
@@ -1224,10 +1220,10 @@ def IndividualModels(compareModels,plot=True, resultsLocation = None, thesisOnly
         clustering.plotClusterTimeline(methodName)
         
 def CompareModels(compareModels, modelCollectionName,plot=True, resultsLocation = None, thesisOnly = True):
-    clustering = GuidedClustering(compareModels,modelCollectionName, resultsLocation)
+    clustering = ClusteringPipeline(compareModels,modelCollectionName, resultsLocation)
 
     # Compare methods
-    print("Compare methods")
+    print("Comparing {}".format(modelCollectionName))
     clustering.compareMethodStatistics()
     clustering.plotAllMethodsSimilarities(plot)
     if plot == False:

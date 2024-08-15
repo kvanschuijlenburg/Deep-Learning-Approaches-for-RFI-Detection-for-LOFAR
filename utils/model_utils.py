@@ -116,7 +116,7 @@ defaultDinoModelWithGanSettings = {
 
 # Dino settings
 defaultDinoModelSettings = {
-    'modelBaseName': 'dino_v6',
+    'modelBaseName': 'dino',
     'architecture': 'vit-s',
     'patchSize': 4,
     'outputDim': 4096,       # DINO: 65536 Dimensionality of the DINO head output. For complex and large datasets large values (like 65k) work well.
@@ -333,17 +333,6 @@ class loss():
         ssim = tf.reduce_mean(tf.image.ssim(y_true,y_pred,1.0))
         return 1-ssim
 
-    # def dice_coef(y_true, y_pred, smooth=1.0):
-    #     # TODO: cite or delete https://stackoverflow.com/questions/72195156/correct-implementation-of-dice-loss-in-tensorflow-keras
-        
-    #     y_true = tf.cast(y_true, y_pred.dtype)
-    #     y_true_f = backend.flatten(y_true)
-    #     y_pred_f = backend.flatten(y_pred)
-
-    #     multiplied = y_true_f*y_pred_f
-    #     intersection = backend.sum(multiplied)
-    #     dice = (2. * intersection + smooth) / (backend.sum(y_true_f) + backend.sum(y_pred_f) + smooth)
-    #     return 1.0-dice
 
 class metrics():
     def calcBatchMetrics(metrics, yTrue,yPred):
@@ -361,21 +350,24 @@ class metrics():
         return accuracy
     
     def recall(y_true, y_pred):
-        # TODO: cite https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
+        # This function is based on code written by Tasos Ventouris found at
+        # https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
         true_positives = backend.sum(backend.round(backend.clip(y_true * y_pred, 0, 1)))
         possible_positives = backend.sum(backend.round(backend.clip(y_true, 0, 1)))
         recall = true_positives / (possible_positives + backend.epsilon())
         return recall
 
     def precision(y_true, y_pred):
-        # TODO: cite https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
+        # This function is based on code written by Tasos Ventouris found at
+        # https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
         true_positives = backend.sum(backend.round(backend.clip(y_true * y_pred, 0, 1)))
         predicted_positives = backend.sum(backend.round(backend.clip(y_pred, 0, 1)))
         precision = true_positives / (predicted_positives + backend.epsilon())
         return precision
 
     def f1(y_true, y_pred):
-        # TODO: cite https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
+        # This function is based on code written by Tasos Ventouris found at
+        # https://datascience.stackexchange.com/questions/45165/how-to-get-accuracy-f1-precision-and-recall-for-a-keras-model
         true_positives = backend.sum(backend.round(backend.clip(y_true * y_pred, 0, 1)))
         possible_positives = backend.sum(backend.round(backend.clip(y_true, 0, 1)))
         predicted_positives = backend.sum(backend.round(backend.clip(y_pred, 0, 1)))  
@@ -494,7 +486,7 @@ class Callbacks():
             self.valX = valData[0]
             self.valY = valData[1]
             self.runInThread = False
-            self.batchSize = 10 # TODO: get from model
+            self.batchSize = 10
 
             #self.dataGenerator = dataGenerator
             self.evaluationFinishedEvent  = threading.Event()
@@ -690,7 +682,10 @@ class Callbacks():
             np.save(os.path.join(self.log_dir, 'images.npy'), images)
 
     class TerminateOnNaN(tf.keras.callbacks.Callback):
-        # TODO: cite source
+        # This class is copied from TensorFlow found at 
+        # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/callbacks.py
+        # It is licensed under the Apache License 2.0
+
         """Callback that terminates training when a NaN loss is encountered."""
         def __init__(self):
             super().__init__()
@@ -1010,7 +1005,10 @@ class layers():
             return xAdd
 
     class InstanceNormalization(tf.keras.layers.Layer):
-        # TODO: cite that it is from stylegan?
+        # This class is the code from Karras, T. and Hellsten, J. from StyleGAN2. Found at
+        # https://github.com/NVlabs/stylegan2
+        # Licensed under Nvidia Source Code License-NC
+
         def __init__(self, bias=False, epsilon=1e-8, **kwargs):
             super(layers.InstanceNormalization, self).__init__(**kwargs)
             self.epsilon = epsilon
@@ -1958,7 +1956,7 @@ class layers():
 #             self.eps = eps
 #             self.dropoutRate = dropoutRate
 #             self.outputChannels = outputChannels
-#             self.skipConnections = skipConnections # TODO: remove line, not used
+#             self.skipConnections = skipConnections 
 #             self.embeddingRestriction = embeddingRestriction
 
 #         def build(self, input_shape):
@@ -2279,7 +2277,7 @@ class layers():
 #         def build(self, input_shape):
 #             self.flatten = tf.keras.layers.Flatten()
 #             self.dense1 = tf.keras.layers.Dense(20)
-#             self.dense2 = tf.keras.layers.Dense(self.nClasses,activation='softmax') # TODO: change to sigmoid when multioutput
+#             self.dense2 = tf.keras.layers.Dense(self.nClasses,activation='softmax') 
 
 #         def call(self, inputs):
 #             # layer 5
@@ -2603,7 +2601,7 @@ class Models():
     #         x5 = tf.keras.layers.Flatten()(x5)
     #         x5 = tf.keras.layers.Dense(20)(x5)
     #         x5 = tf.keras.layers.Dense(20)(x5)
-    #         outputs = tf.keras.layers.Dense(self.nClasses,activation='softmax')(x5) # TODO: change to sigmoid when multioutp
+    #         outputs = tf.keras.layers.Dense(self.nClasses,activation='softmax')(x5)
     #         return tf.keras.Model(inputs,outputs)
 
     class Discriminator_v1(tf.keras.Model):

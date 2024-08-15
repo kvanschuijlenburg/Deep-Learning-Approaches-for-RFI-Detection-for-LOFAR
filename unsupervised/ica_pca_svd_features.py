@@ -49,7 +49,6 @@ def embeddingExists(featuresFilename, nFeatures, samplesHash):
 def CalcEmbeddings():
     h5SetsLocation = utils.functions.getH5SetLocation(datasetName)
     trainSamplesFilename = utils.functions.getDatasetLocation(datasetName, 'trainSamples',subdir=datafolderSubdir)
-    valSamplesFilename = utils.functions.getDatasetLocation(datasetName, 'valSamples',subdir=datafolderSubdir)
 
     dataSettings = {}
     dataSettings['normalizationMethod'] = 12
@@ -58,21 +57,17 @@ def CalcEmbeddings():
     dataSettings['augmentation'] = None
 
     dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'original', 4, trainSamplesFilename,dataSettings=dataSettings, bufferAll=True, cacheDataset=True, nSamples = nSamples)
-    #valGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'gan', 'val', dataSettings['inputShape'][2],valSamplesFilename, ganParameters=ganModelSettings, dataSettings=dataSettings, bufferAll=True, cacheDataset=True, nSamples=dataSettings['nValSamples'])
-
-    samplesHash = dataGenerator.samplesHash
-
-    dataX = []
-    for batchX, batchY in dataGenerator:
-        dataX.extend(batchX)
-    dataX = np.asarray(dataX)
+    dataX, _ = dataGenerator.getItems()
     flattenedX = np.reshape(dataX, (dataX.shape[0], -1))
+    
+    samplesHash = dataGenerator.samplesHash
+    
 
     icaEmbeddingDir,_ = utils.functions.getModelLocation('ica_norm={}'.format(dataSettings['normalizationMethod']), 'embedding')
     pcaEmbeddingDir,_ = utils.functions.getModelLocation('pca_norm={}'.format(dataSettings['normalizationMethod']), 'embedding')
     svdEmbeddingDir,_ = utils.functions.getModelLocation('svd_norm={}'.format(dataSettings['normalizationMethod']), 'embedding')
 
-    for nFeatures in tqdm(featuresList):
+    for nFeatures in tqdm(featuresList, desc='Calculating embeddings for ICA, PCA and SVD'):
         featuresFilename = 'embedding_nFeatures={}.pkl'.format(nFeatures)
                
         icaEmbeddingFilename = os.path.join(icaEmbeddingDir, featuresFilename)

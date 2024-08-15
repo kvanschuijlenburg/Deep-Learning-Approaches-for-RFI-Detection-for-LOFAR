@@ -305,13 +305,13 @@ class DinoHead(tf.keras.models.Model):
         return x
     
 class Dino(tf.keras.models.Model):
-    def __init__(self, dinoSettings, dataSettings, teacher_model, student_model, batchSize, customPositionalEncoding=None,metadataEncoding=None, momentumScheduler = None,nBatches=None,teacherTempScheduler=None):
+    def __init__(self, dinoSettings, dataSettings, teacher_model, student_model, batchSize, momentumScheduler = None,nBatches=None,teacherTempScheduler=None):
         super(Dino, self).__init__()
         self.teacher_model = teacher_model
         self.student_model = student_model
 
-        self.customPositionalEncoding = customPositionalEncoding
-        self.metadataEncoding = metadataEncoding
+        self.customPositionalEncoding = None
+        self.metadataEncoding = None
         self.nGlobalCrops = 2
         self.nLocalCrops = dinoSettings['nLocalCrops']
         self.momentumScheduler = momentumScheduler
@@ -470,8 +470,10 @@ class Dino(tf.keras.models.Model):
 
         if self.customPositionalEncoding is not None or self.metadataEncoding is not None:
             teacher_output = self.teacher_model([global_image,globalMetadata], training=False)
+            _ = self.student_model([local_image,localMetadata], training=False) # Required for compiling the model
         else:
             teacher_output = self.teacher_model(global_image, training=False)
+            _ = self.student_model(local_image, training=False) # Required for compiling the model
         return teacher_output
 
 class VitModel(tf.keras.models.Model):
@@ -590,10 +592,15 @@ class CustomCosineScheduler(tf.keras.optimizers.schedules.LearningRateSchedule):
         return value
 
 class DinoLoader:
-    def __init__(self, dinoSettings, dataSettings, ganSettings= None, overideBatchSize = None, resultsDir = None):
+    def __init__(self, dinoSettings, dataSettings, ganSettings= None, overideBatchSize = None, resultsDir = None, keepAllEpochs = False):
         self.dinoSettings = dinoSettings
         self.dataSettings = dataSettings
         self.ganSettings = ganSettings
+
+        if keepAllEpochs:
+            self.epochsToKeep=None
+        else:
+            self.epochsToKeep = 1
 
         # Data settings
         self.inputShape = dataSettings['inputShape']
@@ -731,8 +738,8 @@ class DinoLoader:
     
     def buildModel(self, nBatches):
         # Create model
-        hiddenSize, teacher = self.load_base('teacher')
-        hiddenSize, student = self.load_base('student')
+        hiddenSize, teacherBackbone = self.load_base('teacher')
+        hiddenSize, studentBackbone = self.load_base('student')
         
         flattenBackbone = self.dinoSettings['architecture'] == 'gan'
         reducedGanDimension = self.dinoSettings['reducedGanDimension']
@@ -756,8 +763,8 @@ class DinoLoader:
         studentHead = DinoHead(hiddenSize,self.outputDim,use_bn = self.dinoSettings['use_bn_in_head'], norm_last_layer=self.dinoSettings['normLastLayer'], hidden_dim=hidden_dim)
         teacherHead = DinoHead(hiddenSize,self.outputDim,use_bn = self.dinoSettings['use_bn_in_head'], norm_last_layer=self.dinoSettings['normLastLayer'], hidden_dim=hidden_dim)
 
-        student = MultiCropWrapper(backbone=student, head=studentHead, hiddenSize=hiddenSize, patchSize=self.patchSize,flattenBackbone=flattenBackbone, reducedGanFilters=reducedGanFilters)
-        teacher = MultiCropWrapper(backbone=teacher, head=teacherHead, hiddenSize=hiddenSize, patchSize=self.patchSize,flattenBackbone=flattenBackbone, reducedGanFilters=reducedGanFilters)
+        student = MultiCropWrapper(backbone=studentBackbone, head=studentHead, hiddenSize=hiddenSize, patchSize=self.patchSize,flattenBackbone=flattenBackbone, reducedGanFilters=reducedGanFilters)
+        teacher = MultiCropWrapper(backbone=teacherBackbone, head=teacherHead, hiddenSize=hiddenSize, patchSize=self.patchSize,flattenBackbone=flattenBackbone, reducedGanFilters=reducedGanFilters)
         
         self.lrScheduler = CustomCosineScheduler(
             self.dinoSettings['learningRate'],
@@ -794,16 +801,13 @@ class DinoLoader:
             # weight decay should be used by the adamW optimizer
             self.optimizer = tf.keras.optimizers.Adam(self.lrScheduler)
         elif self.dinoSettings['optimizer'] == 'adamw':
-            if os.environ.get('OS','') == "Windows_NT":
-                self.optimizer = tfa.optimizers.AdamW(learning_rate=self.lrScheduler, weight_decay=self.wdScheduler)
-            else:
-                self.optimizer = tf.keras.optimizers.experimental.AdamW(learning_rate=self.lrScheduler, weight_decay=self.wdScheduler)
+            self.optimizer = tfa.optimizers.AdamW(learning_rate=self.lrScheduler, weight_decay=self.wdScheduler)
         elif self.dinoSettings['optimizer'] == 'lamb':
             self.optimizer = tfa.optimizers.LAMB(learning_rate=self.lrScheduler, weight_decay_rate=self.wdScheduler)
         else:
             raise ValueError("Optimizer not recognized")
 
-        self.model = Dino(self.dinoSettings, self.dataSettings, teacher, student, self.batchSize, self.dinoSettings['customPositionalEncoding'], self.dinoSettings['metadataEncoding'], momentumScheduler, nBatches,teacherTempScheduler)
+        self.model = Dino(self.dinoSettings, self.dataSettings, teacher, student, self.batchSize, momentumScheduler, nBatches,teacherTempScheduler)
         self.model.compile(optimizer=self.optimizer)
 
         fakeGenerator = utils.datasets.Generators.FakeDinoGenerator(self.batchSize, self.nChannels,self.teacherGlobalSize,self.studentLocalSize,2, self.nLocalCrops, 1)
@@ -818,13 +822,13 @@ class DinoLoader:
 
     def updateCheckpoint(self):
         checkpoint = tf.train.Checkpoint(logName = self.logName, teacherCenter=self.model.center, optimizer = self.model.optimizer, studentModel = self.model.student_model, teacherModel = self.model.teacher_model)
-        self.checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=1)
+        self.checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=self.epochsToKeep)
 
     def loadCheckpoint(self, restoreTraining=True, restoreTeacher = False, loadEpoch = None):
         if restoreTeacher:
             # load Dino weights
             checkpoint = tf.train.Checkpoint(logName = self.logName,teacherModel = self.dinoTeacher)
-            checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=1)
+            checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=self.epochsToKeep)
             dinoEpoch = 0
             if checkpointManager.latest_checkpoint:
                 if loadEpoch is None:
@@ -853,7 +857,7 @@ class DinoLoader:
         else:
             # Checkpoint
             checkpoint = tf.train.Checkpoint(logName = self.logName, teacherCenter=self.model.center, optimizer = self.model.optimizer, studentModel = self.model.student_model, teacherModel = self.model.teacher_model)
-            self.checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=2)
+            self.checkpointManager = tf.train.CheckpointManager(checkpoint, self.checkpointDir, max_to_keep=self.epochsToKeep)
 
             if self.checkpointManager.latest_checkpoint:
                 if loadEpoch is None:

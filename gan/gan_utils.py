@@ -62,7 +62,7 @@ class Generator(tf.keras.Model):
             if ganModelSettings['modConv']:
                 if self.metadataSyleInput is None:
                     nFeaturesZ = dinoModelSettings['reducedGanDimension']
-                    encoderOutputDimension = randomEmbedding.shape[1]*randomEmbedding.shape[2]*randomEmbedding.shape[3] # TODO: Get this from the encoder, randomEmbedding
+                    encoderOutputDimension = randomEmbedding.shape[1]*randomEmbedding.shape[2]*randomEmbedding.shape[3] 
                     nFiltersReductionLayer = round((nFeaturesZ/encoderOutputDimension)*randomEmbedding.shape[-1])
                     self.featuresReductionLayer = tf.keras.layers.Conv2D(filters=nFiltersReductionLayer,kernel_size=1,strides=1,padding="valid")
                     self.flattenLayer = tf.keras.layers.Flatten()
@@ -107,7 +107,7 @@ class Generator(tf.keras.Model):
             if self.flattenFeaturesVector:
                 if self.maskStyleInput: # To test the effect of the style input. Will prevent the network from learning the style
                     # make a random noise vector of the same size as the latentZ
-                    flattenSize = 320 # latentZ.shape[1] # TODO: fix this
+                    flattenSize = 320
                     latentZ = tf.random.truncated_normal((self.batchSize,flattenSize))
                 elif self.metadataSyleInput is None:
                     dinoFeatures = self.featuresReductionLayer(dinoEmbedding)

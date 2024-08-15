@@ -1,3 +1,14 @@
+# This file contains almost completely the code written by the hera_sim authors found at
+# https://github.com/HERA-Team/hera_sim
+# The code is licensed by the HERA-team under the following clause:
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, 
+# modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the 
+# Software is furnished to do so, subject to the following conditions:
+
+#The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
 import os
 import warnings
 
@@ -410,7 +421,6 @@ class DTV():
         df = np.mean(np.diff(freqs))
         dtv_iterator = zip(bands, self.dtv_chance, self.dtv_strength, self.dtv_std)
 
-        # TODO: update the documentation here to make it more clear what's happening.
         # loop over the DTV bands, generating rfi where appropriate
         for band, chance, strength, std in dtv_iterator:
             # Find the first channel affected.

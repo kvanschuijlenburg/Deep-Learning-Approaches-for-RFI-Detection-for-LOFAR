@@ -6,8 +6,8 @@ import numpy as np
 import tables as tb
 from tqdm import tqdm
 
-measurementSetLocation = '/home/koen/sharedFolder/'
-datasetLocation = '/home/koen/sharedFolder/'
+measurementSetLocation = './data/LOFAR_L2014581 (recording)/ms'
+datasetLocation = './data/LOFAR_L2014581 (recording)/h5'
 
 polarizations = ["XX", "YY", "XY", "YX"]
 batchSize = 500
@@ -143,7 +143,8 @@ def msToh5(msFileName, h5FileName):
     # Close the PyTables HDF5 file
     h5file.close()
 
-def convertDirectory(msDir, h5Dir):
+def convertDirectory(msDir=measurementSetLocation, h5Dir=datasetLocation):
+    os.makedirs(h5Dir, exist_ok=True)
     measurementSets = [folder for folder in os.listdir(msDir) if folder.endswith('.ms')]
     h5Sets = [filename for filename in os.listdir(h5Dir) if filename.endswith('.h5')]
 

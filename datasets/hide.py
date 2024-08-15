@@ -1,3 +1,8 @@
+# This file contains almost completely the code written by the HIDE authors found at
+# https://github.com/cosmo-ethz/hide
+# The code is under the GPL-3.0 license
+
+
 import os
 from datetime import timedelta
 from datetime import datetime
@@ -10,7 +15,7 @@ from scipy import stats
 from scipy.signal.signaltools import fftconvolve
 from collections import namedtuple
 
-#from copited from ivy.utils.struct
+# from copied from ivy.utils.struct
 class ImmutableStruct(object):#, UserDict.DictMixin):
     """
     A `dict`-like object, whose keys can be accessed with the usual

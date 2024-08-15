@@ -362,6 +362,7 @@ class Generators():
             if len(self.indices)>45000 and bufferAll:
                 print("Loading more than 45000 samples. Buffering is disabled.")
                 bufferAll = False
+                cacheDataset = False
 
             # Always create a hash such that the samples are verifiable in the pipeline
             # Hash the samples data, and remove all non-alphanumeric characters from the hash so it can be used as a filename
@@ -389,30 +390,29 @@ class Generators():
                     if self.loadMetadata:
                         self.metadata = self.cacheDataset['/metadata']
                     return
-        
 
-            print("Load samples: cache file does not exist, start loading from h5 sets.")
-            sampledData = utils.functions.sampleFromH5(self.h5SetsLocation, self.samples, self.frequencyMap, verbose=True, standardize=False)
-            if sampledData is None:
-                raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 sets or cache file {}".format(self.samplesHash))
+                print("Load samples: cache file does not exist, start loading from h5 sets.")
+                sampledData = utils.functions.sampleFromH5(self.h5SetsLocation, self.samples, self.frequencyMap, verbose=True, standardize=False)
+                if sampledData is None:
+                    raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 sets or cache file {}".format(self.samplesHash))
 
-            names,positions,frequencies,times,uvws,timeStartStep,self.dataX,self.dataY,setMetadata = sampledData
-            self.metadata = list(zip(frequencies, timeStartStep))
+                names,positions,frequencies,times,uvws,timeStartStep,self.dataX,self.dataY,setMetadata = sampledData
+                self.metadata = list(zip(frequencies, timeStartStep))
 
-            if cacheDataset:
-                cacheSet = h5py.File(self.cacheFilename, 'w')
-                cacheSet.create_dataset('dataX',data=self.dataX)
-                cacheSet.create_dataset('dataY',data=self.dataY)
-                if self.loadMetadata:
-                    cacheSet.create_dataset('metadata',data=self.metadata)
-                cacheSet.close()
-                self.cacheDataset = h5py.File(self.cacheFilename, 'r')
-            else:
-                self.cacheDataset = {}
-                self.cacheDataset['/dataX'] = self.dataX
-                self.cacheDataset['/dataY'] = self.dataY
-                if self.loadMetadata:
-                    self.cacheDataset['/metadata'] = self.metadata
+                if cacheDataset:
+                    cacheSet = h5py.File(self.cacheFilename, 'w')
+                    cacheSet.create_dataset('dataX',data=self.dataX)
+                    cacheSet.create_dataset('dataY',data=self.dataY)
+                    if self.loadMetadata:
+                        cacheSet.create_dataset('metadata',data=self.metadata)
+                    cacheSet.close()
+                    self.cacheDataset = h5py.File(self.cacheFilename, 'r')
+                else:
+                    self.cacheDataset = {}
+                    self.cacheDataset['/dataX'] = self.dataX
+                    self.cacheDataset['/dataY'] = self.dataY
+                    if self.loadMetadata:
+                        self.cacheDataset['/metadata'] = self.metadata
 
         def loadh5(self, h5SetsLocation):
             if self.loadMetadata:
@@ -449,9 +449,15 @@ class Generators():
                 else:
                     sampleList = [self.samples[index] for index in sampleIndices]
                     if loadY:
-                        dataX,dataY = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=['observations','labels'])
+                        loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=['observations','labels'])
+                        if loadedData is None:
+                            raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+                        dataX,dataY = loadedData
                     else:
-                        dataX = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=['observations'])[0]
+                        loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=['observations'])
+                        if loadedData is None:
+                            raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+                        dataX = loadedData[0]
                     if batchDinoFeatures is not None:
                         dataX = [dataX, batchDinoFeatures]
                     return dataX, dataY
@@ -663,7 +669,10 @@ class Generators():
         def loadGan(self, sampleIndices):
             if self.dataX is None:
                 sampleList = [self.samples[index] for index in sampleIndices]
-                dataX,dataY = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, standardize=False, loadComponents = ['observations','labels'])
+                loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, standardize=False, loadComponents = ['observations','labels'])
+                if loadedData is None:
+                    raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+                dataX,dataY = loadedData
             else:
                 dataX = self.dataX[sampleIndices]
                 dataY = self.dataY[sampleIndices]
@@ -689,7 +698,10 @@ class Generators():
         def loadGanSs(self, sampleIndices):
             if self.dataX is None:
                 sampleList = [self.samples[index] for index in sampleIndices]
-                names,positions,frequencies,times,uvws,sinTimes,dataX,dataY,setMetadata = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False)
+                loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False)
+                if loadedData is None:
+                    raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+                names,positions,frequencies,times,uvws,sinTimes,dataX,dataY,setMetadata = loadedData
             else:
                 dataX = self.dataX[sampleIndices]
 
@@ -699,7 +711,10 @@ class Generators():
         def getLabels(self):
             if self.dataX is None:
                 sampleList = self.samples
-                names,positions,frequencies,times,uvws,sinTimes,scaledX,dataY,setMetadata = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=True)
+                loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=True)
+                if loadedData is None:
+                    raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+                names,positions,frequencies,times,uvws,sinTimes,scaledX,dataY,setMetadata = loadedData
             else:
                 dataY = self.dataY
 
@@ -798,7 +813,11 @@ class Generators():
             # loadMetadata = 'setMetadata' in loadComponents
             loadComponents = ['names', 'positions', 'frequencies', 'times']
 
-            names, positions, frequencies, times = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=loadComponents)
+            loadedData = utils.functions.sampleFromH5(self.h5SetsLocation, sampleList, self.frequencyMap, verbose=False, standardize=False, loadComponents=loadComponents)
+            if loadedData is None:
+                raise Exception("Required h5 sets do not exist or are incomplete. Please provide h5 files")
+            names, positions, frequencies, times = loadedData
+            
             names = np.asarray(names)
             metadata = [names,positions, frequencies,times]
             return metadata
@@ -920,7 +939,7 @@ def calcRfiTypesPerSample(dataY, returnDebugImages = False): #debugPlotLoc=None)
 
         rfiResults = np.stack((totalRfi,totalWeakRfi,totalRfiY, totalRfiX),axis=1)
         rfiRatioResults = np.stack((ratioTotalRfi,ratioWeakRfi, ratioRfiY, ratioRfiX),axis=1)
-        rfiCategories = ['Total amount of RFI','Weak RFI','RFI local in time', 'RFI local in frequency']#,'Single RFI']
+        rfiCategories = ['Total amount of RFI','Erratic RFI','Broadband RFI', 'Narrow-band RFI']
 
         if returnDebugImages:
             return rfiResults, rfiRatioResults, rfiCategories, dataY, dataRfiWeak, dataRfiY, dataRfiX

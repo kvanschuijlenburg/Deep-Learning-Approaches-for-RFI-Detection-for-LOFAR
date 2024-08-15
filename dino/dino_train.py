@@ -15,7 +15,7 @@ def train(experiment, saveEmbeddingEachEpoch, resultsLocation=None, logHistogram
     Training the DINO model. When the model has a vision transformer (ViT) as backbone, the attention maps are saved automatically. 
     """
 
-    dinoModelSettings,dataSettings,ganModelSettings = GetExperiment(experiment,mixedPrecision=False,debug=debug)
+    dinoModelSettings,dataSettings,ganModelSettings = GetExperiment(experiment,debug=debug)
 
     modelName = utils.models.getDinoModelName(dinoModelSettings,dataSettings,ganModelSettings)
     print("Experiment {}: {}".format(experiment, modelName))
@@ -52,7 +52,7 @@ def train(experiment, saveEmbeddingEachEpoch, resultsLocation=None, logHistogram
         embeddingEpochGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dino', 'test', dinoModelSettings['nChannels'],valSamplesFilename, dinoModelSettings, dataSettings=dataSettings, bufferAll = bufferDataset, cacheDataset = cacheDataset, nSamples=nValSamples) 
     
     # Load model
-    dinoLoader = DinoLoader(dinoModelSettings, dataSettings, ganModelSettings,resultsDir=resultsLocation)
+    dinoLoader = DinoLoader(dinoModelSettings, dataSettings, ganModelSettings,resultsDir=resultsLocation, keepAllEpochs = saveEmbeddingEachEpoch)
     dinoLoader.buildModel(len(train_dataset))
     startEpoch = dinoLoader.loadCheckpoint()
     callbacks = dinoLoader.loadCallbacks(attentionMapGenerator = attentionMapGenerator, embeddingEpochGenerator = embeddingEpochGenerator, supervisedValGenerator = supervisedValGenerator, logHistogramsEachEpoch=logHistogramsEachEpoch)
@@ -75,10 +75,7 @@ def train(experiment, saveEmbeddingEachEpoch, resultsLocation=None, logHistogram
             # weight decay should be used by the adamW optimizer
             optimizer = tf.keras.optimizers.Adam(dinoLoader.lrScheduler)
         elif dinoLoader.dinoSettings['optimizer'] == 'adamw':
-            if os.environ.get('OS','') == "Windows_NT":
-                optimizer = tfa.optimizers.AdamW(learning_rate=dinoLoader.lrScheduler, weight_decay=dinoLoader.wdScheduler)
-            else:
-                optimizer = tf.keras.optimizers.experimental.AdamW(learning_rate=dinoLoader.lrScheduler, weight_decay=dinoLoader.wdScheduler)
+            optimizer = tfa.optimizers.AdamW(learning_rate=dinoLoader.lrScheduler, weight_decay=dinoLoader.wdScheduler)
         else:
             raise ValueError("Optimizer not recognized")
         

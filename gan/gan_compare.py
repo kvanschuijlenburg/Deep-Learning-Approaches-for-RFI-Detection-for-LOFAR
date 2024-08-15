@@ -13,6 +13,7 @@ from scipy.stats import shapiro, ranksums, sem
 from scipy.stats import t as sciT
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
+from tqdm import tqdm
 
 import utils as utils
 import gan.ganExperiments as ganExperiments
@@ -124,7 +125,7 @@ def readAllLogs(experimentNames, logRoot, plotSteps=False):
     stepsPerEpoch = {}
     for experiment in experimentNames:
         if 'exp' in experiment.keys():
-            ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment['exp'],False)
+            ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment['exp'])
             ganName = utils.models.getGanModelName(ganModelSettings, ganDataSettings, dinoModelSettings)
             experimentDir = os.path.join(logRoot,ganName)
             if plotSteps:
@@ -145,7 +146,7 @@ def readEvaluationLogs(experimentNames,logRoot,datasets):
     experimentLogs = {}
     for experiment in experimentNames:
         if 'exp' in experiment.keys():
-            ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment['exp'],False)
+            ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment['exp'])
             ganName = utils.models.getGanModelName(ganModelSettings, ganDataSettings, dinoModelSettings)
             experimentDir = os.path.join(logRoot,ganName)
         else:
@@ -161,8 +162,6 @@ def readEvaluationLogs(experimentNames,logRoot,datasets):
                     evaluationFilename = os.path.join(runDir ,'evaluation.pkl')
                 elif dataset == 'val':
                     evaluationFilename = os.path.join(runDir ,'evaluation_val.pkl')
-                elif dataset == 'valTest':
-                    evaluationFilename = os.path.join(runDir ,'evaluation_valTest.pkl')
                 elif dataset == 'test':
                     evaluationFilename = os.path.join(runDir ,'evaluation_test.pkl')
 
@@ -247,7 +246,7 @@ def calcEvaluationStatistics(experimentNames, datasets, experimentResults,metric
                 statisticsResults[experimentOne['name']][dataset][experimentTwo['name']] = metricsPvalues
     return statisticsResults
 
-def CompareModels(experimentNames, datasets=['valTest', 'val','test'], logLocation = None, plotLocation = None):#plotAccuracyGraph=False):
+def CompareModels(experimentNames, datasets=['val','test'], logLocation = None, plotLocation = None):#plotAccuracyGraph=False):
     logRoot = os.path.join(utils.functions.modelsLocation,'gan')
     if logLocation is not None:
         os.makedirs(logLocation, exist_ok=True)
@@ -259,7 +258,7 @@ def CompareModels(experimentNames, datasets=['valTest', 'val','test'], logLocati
 
     if plotLocation is not None:
         for dataset in datasets:
-            plt.figure(figsize=(10,6))
+            plt.figure(figsize=(8,3)) # 10,6
             ax = plt.axes()
 
             accuracies = []
@@ -348,7 +347,7 @@ def plotTrainingGraphs(experimentLogs,stepsPerEpoch, plotLocation,plotSteps = Fa
         for tagName, metricsName in trainingMetrics:
             nStepsMax=0
             nStepsMin = 100000000
-            plt.figure(figsize=(10,6))
+            plt.figure(figsize=(8,3)) # 10,6
             ax = plt.axes()
             if plotZoom:
                 axins = zoomed_inset_axes(ax, zoom=5, loc='center right')
@@ -398,10 +397,10 @@ def plotTrainingGraphs(experimentLogs,stepsPerEpoch, plotLocation,plotSteps = Fa
                     
             xAxisValues = np.unique(np.asarray(xAxisValues))
 
-            if uncertainty == 'ci':
-                ax.set_title("{} {} with {}".format(dataSource,metricsName, uncertainty))
-            else:
-                ax.set_title("{} {}".format(dataSource,metricsName))
+            # if uncertainty == 'ci':
+            #     ax.set_title("{} {} with {}".format(dataSource,metricsName, uncertainty))
+            # else:
+            #     ax.set_title("{} {}".format(dataSource,metricsName))
             
             if plotMaxEpoch==False:
                 xAxisValues = [value for value in xAxisValues if value<=nStepsMin]
@@ -618,7 +617,7 @@ def EvaluateTraining(experimentNames, plotLocation, plotZoom=True,plotMinEpochs=
     logRoot = os.path.join(utils.functions.modelsLocation,'gan')
     experimentLogs,stepsPerEpoch = readAllLogs(experimentNames, logRoot,plotSteps=True)
     calcTrainingStatistics(experimentLogs,experimentNames,plotLocation)
-    plotTrainingLossGraphs(experimentLogs, stepsPerEpoch,plotLocation)
+    # plotTrainingLossGraphs(experimentLogs, stepsPerEpoch,plotLocation)
     plotTrainingGraphs(experimentLogs, stepsPerEpoch,plotLocation,plotSteps=True, plotMaxEpoch=True, plotZoom = plotZoom)
     plotTrainingGraphs(experimentLogs, stepsPerEpoch,plotLocation,plotSteps=False, plotMaxEpoch=True, plotZoom = plotZoom) 
     
@@ -630,15 +629,13 @@ def EvaluateTraining(experimentNames, plotLocation, plotZoom=True,plotMinEpochs=
 
 
 
-
-# Function for loading data TODO: make the functions below more compact/combine them
 def loadData(model, run, valData):
     modelsRoot = os.path.join(utils.functions.modelsLocation, 'gan')
 
     # Load model properties and data
     name = model['name']
     experiment = model['exp']
-    ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment,False)
+    ganDataSettings, ganModelSettings, dinoModelSettings = ganExperiments.GetExperiment(experiment)
     ganName = utils.models.getGanModelName(ganModelSettings, ganDataSettings, dinoModelSettings)
     experimentDir = os.path.join(modelsRoot,ganName,'run_{}'.format(run))
     if valData:
@@ -686,7 +683,7 @@ def loadSampleData(dataX,trueLabels,colorImages, modelPredictions, sampleIdx):
 
 # Plot visualizations
 def makeComparisonImage(saveLocation, dataX, referenceLabels, predictedLabels, referenceName, predictedName,nSamples):
-    for sampleIdx in range(nSamples):
+    for sampleIdx in tqdm(range(nSamples), desc='Visualizing samples for {}'.format(predictedName)):
         sampleXX = dataX[sampleIdx][:,:,0]
         sampleXY = dataX[sampleIdx][:,:,1]
         sampleYX = dataX[sampleIdx][:,:,2]

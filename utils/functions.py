@@ -9,13 +9,9 @@ from tqdm import tqdm
 
 import utils as utils
 
-# TODO: change back
-# plotsLocation = "./plots"
-# modelsLocation = "./models"
-# datasetsLocation = "./datasets"
-datasetsLocation = "D:\\requiredData\\data"
-modelsLocation = "D:\\requiredData\\models" 
-plotsLocation = "D:\\plots" 
+plotsLocation = "./plots"
+modelsLocation = "./models"
+datasetsLocation = "./datasets"
 
 
 def getMeasurementSetLocation(datasetName):
@@ -426,58 +422,12 @@ def normalizeComplex(observationComplexValues, ignorePadding=False,standardize=T
     
     return observationComplexValues
 
-# def normalizeAmplitude(observationAmplitude): 
-#     # Normalize amplitude
-#     amplitude = observationAmplitude[1:,:]
-#     amplitude = amplitude-np.min(amplitude)
-
-#     amplitude = np.log10(amplitude+0.1)
-#     clipSigma = 2
-#     minClip = np.mean(amplitude) - np.std(amplitude)*clipSigma
-#     maxClip = np.mean(amplitude) + np.std(amplitude)*clipSigma
-#     amplitude = np.clip(amplitude,minClip,maxClip)
-    
-#     normAmplitude = (amplitude-np.min(amplitude))/(np.max(amplitude)-np.min(amplitude))
-
-#     observationAmplitude[1:,:]=normAmplitude
-#     return observationAmplitude
-
-# def normalizePhase(observationPhase):
-#     phase = observationPhase[1:,:]
-#     normPhase = (phase-np.min(phase))/(np.max(phase)-np.min(phase))
-#     observationPhase[1:,:]=normPhase
-#     return observationPhase
-
-# def normalizeToMagAngle(observation):
-#     normalized = np.zeros((observation.shape[0],observation.shape[1],observation.shape[2],2))
-    
-#     # In each channel, the first row is always zero. Exclude it during normalization
-#     for polarIndex in range(observation.shape[2]):
-#         normalizedComplex = normalizeComplex(observation[:,:,polarIndex])
-#         normalized[:,:,polarIndex,0] = np.abs(normalizedComplex)
-#         angle = np.angle(normalizedComplex)
-#         normalized[:,:,polarIndex,1] = (angle+math.pi)/(2*math.pi)
-#     return normalized
-
 def randomlyDivideOverArray(totalCounts,nElements):
     minPerElement = int(totalCounts/nElements)
     toBeDivided = totalCounts-(minPerElement*nElements)
     countsPerElement = minPerElement*np.ones(nElements,dtype=np.uint8)
     countsPerElement[np.random.choice(nElements, toBeDivided, replace=False)] += 1
     return countsPerElement
-
-# def averageComplex(arr1, arr2):
-#     arr1abs = np.abs(arr1)
-#     arr1Phase = np.angle(arr1)
-#     arr2abs = np.abs(arr2)
-#     arr2Phase = np.angle(arr2)
-
-#     newAbs = (arr1abs + arr2abs) / 2
-#     newPhase = (arr1Phase + arr2Phase) / 2
-#     newComplex = newAbs * np.exp(1j*newPhase)
-
-#     return newComplex
-
 
 def sampleObservations(h5SetsLocation, nSamples, timeWindow=None, strategy = 'equalSubbands_equalCorrelation_randomTime'):
     """
@@ -806,63 +756,6 @@ def sampleFromH5(h5SetsLocation, sampleList, frequencySubbandMapping=None,timeWi
     if loadMetadata: results += (setMetadata,)
     return results
 
-# def aipsMJDToRepresentation(aipsMJD):
-#     if isinstance(aipsMJD, np.float64):
-#         aipsMJD = [aipsMJD]
-    
-#     representations = []
-
-#     for value in aipsMJD:
-#         year, month, dayOfMonth, hours, mins, secs, msec = aipsMJDToDateTime(value)
-#         date = datetime(year, month, dayOfMonth, hours, mins, secs, msec)
-        
-#         # Calculate the part of the year
-#         secondsThisYear = (datetime(year, 12, 31,23,59,59)-datetime(year, 1, 1)).total_seconds()
-#         partOfYear = (date - datetime(year, 1, 1)).total_seconds() / secondsThisYear
-#         sinYear = sin(partOfYear*2*math.pi)
-
-#         # Calculate the part of the week, starting at Monday
-#         hourOfTheWeek = date.weekday()*24+hours
-#         partOfTheWeek = hourOfTheWeek /(7*24)
-#         sinWeek = sin(partOfTheWeek*2*math.pi)
-
-#         # Calculate part of the day
-#         partOfTheDay = (hours*3600 + mins*60+secs)/(24*3600)
-#         sinDay = sin(partOfTheDay*2*math.pi)
-#         representations.append([sinYear, sinWeek, sinDay])
-
-#     return representations
-
-# def aipsMJDToDateTime(aipsMJD):
-#     #TODO: credits to Dr. Offringa, ASTRON
-
-#     #aipsMJD to jd
-#     mjd = aipsMJD / (60.0 * 60.0 * 24.0)
-#     jd = mjd + 2400000.5
-    
-#     # JD to Date
-#     x2 = (jd - 1721119.5);  # number of days since year 0
-#     c2 = int(((8.0 * x2 + 7.0) / 292194.0)) # hectayears from day 0
-#     x1 = x2 - math.floor(146097.0 * c2 / 4.0)  # number of days since beginning of century
-#     c1 = int(((200 * x1 + 199) / 73050)) # years since the beginning of the century
-#     x0 = x1 - math.floor(36525.0 * c1 / 100.0)
-#     year = 100 * c2 + c1
-#     month = int(((10.0 * x0 + 923.0) / 306.0))
-#     dayOfMonth = int(x0 - ((153 * month - 457) / 5) + 1)
-#     if (month > 12):
-#       month -= 12
-#       year +=1
-#     dayOfMonth, month, year
-    
-#     # JD to time
-#     time = math.fmod(jd + 0.5, 1.0) * 24.0
-#     hours = int(time)
-#     mins = int(time * 60) % 60
-#     secs = int(time * 3600) % 60
-#     msec = int(time * 3600000) % 1000
-
-#     return year, month, dayOfMonth, hours, mins, secs, msec
-
 def getMetadata(h5Set):
     with h5py.File(h5Set, 'r') as f5file:
         metadata_group = f5file['Metadata']
@@ -873,11 +766,6 @@ def getMetadata(h5Set):
         time = correlation_AB['Time'][:]  
     antennaData = [antennaNames,antennaPositions]
     return antennaData, channelFrequencies, time
-
-# def getAntennaKeys(h5Set):
-#     antennaData, _, _ = getMetadata(h5Set)
-#     antennaNames = antennaData[0]
-#     return antennaNames
 
 def getObservation(h5Set, antennaA=0, antennaB=1, time=None):
     with h5py.File(h5Set, 'r') as f5file:
@@ -922,7 +810,3 @@ def getObservation(h5Set, antennaA=0, antennaB=1, time=None):
         for repIndex, representation in enumerate(utils.constants.linearRepresentation):  
             observation[:,:,repIndex] = correlation_AB[representation] 
     return warning,[antennaA, antennaB, posA, posB],chan_freq, time, observation, label
-
-# def cropObservation(observation, height, width):
-#     observation = observation[height[0]:height[1],width[0]:width[1],:,:]
-#     return observation

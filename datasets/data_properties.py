@@ -52,7 +52,6 @@ def PlotRfiPercentagePerSubband(plotsLocation):
         print("(Not all) h5 files available. Skipping calculating RFI percentage per subband.")
         return
 
-    # TODO: from the subband index is the samples file can the frequencies be retried. However, this is quite hacky
     names,positions,frequencies,times,uvws,sinTimes,observations,labels,setMetadata = sampledData
     labels[:,0,:] = 0
 
@@ -104,19 +103,19 @@ def PlotRfiPhenomena(plotsLocation):
         ax[0].set_ylabel('Channel')
         ax[0].set_xticks([])
         
-        ax[1].set_title('Weak RFI')
+        ax[1].set_title('Erratic RFI')
         ax[1].imshow(dataRfiWeak[sampleIdx])
         ax[1].invert_yaxis()
         ax[1].set_ylabel('Channel')
         ax[1].set_xticks([])
         
-        ax[2].set_title('RFI local in time')
+        ax[2].set_title('Broadband RFI')
         ax[2].imshow(dataRfiY[sampleIdx])
         ax[2].invert_yaxis()
         ax[2].set_ylabel('Channel')
         ax[2].set_xticks([])
         
-        ax[3].set_title('RFI local in frequency')
+        ax[3].set_title('Narrow-band RFI')
         ax[3].imshow(dataRfiX[sampleIdx])
         ax[3].invert_yaxis()
         ax[3].set_ylabel('Channel')
@@ -195,7 +194,6 @@ def PlotNormalizedExamples(plotsLocation, normalizations = [{'index':0, 'name': 
     
     
     dataGenerator = utils.datasets.Generators.UniversalDataGenerator(h5SetsLocation, 'dimensionReduction', 'train', -1, trainSamplesFilename,dataSettings={'batchSize':10, 'normalizationMethod':0}, bufferAll=True, cacheDataset=True, nSamples = 500) # NOTE: for 500 samples there is a cache file
-    #_,_,_,_,_,_,observations,_,_ = utils.functions.sampleFromH5(h5SetsLocation, sampleList,frequencyMap, standardize=False)
 
     for plotIdx, normalization in enumerate(normalizations):
         normalizationMethod = normalization['index']
