@@ -2,4 +2,7 @@
 /.venv/
 /.vscode/
 /.VSCodeCounter/
+/plots/
+/data/
+/models/
 .pylintrc

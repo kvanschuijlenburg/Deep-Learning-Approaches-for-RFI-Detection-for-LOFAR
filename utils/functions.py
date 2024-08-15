@@ -11,7 +11,7 @@ import utils as utils
 
 plotsLocation = "./plots"
 modelsLocation = "./models"
-datasetsLocation = "./datasets"
+datasetsLocation = "./data"
 
 
 def getMeasurementSetLocation(datasetName):
