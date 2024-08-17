@@ -1,4 +1,4 @@
-# Deep Learning Approaches for Radio Frequency Interference Detection for LOFAR 📡
+# Deep Learning Approaches for Radio Frequency Interference Detection for LOFAR
 
 Welcome to the repository for our project on **Deep Learning Approaches for Radio Frequency Interference Detection for LOFAR**. This repository contains all the necessary code to reproduce all experiments, figures, tables, and statistical tests from our thesis.
 
@@ -66,7 +66,7 @@ Without the original `.ms` sets:
 - DINO ViT experiments cannot be trained.
 - DINO experiments 31 and 32 cannot be trained.
 
-# Acknowledgements 🙏
+# Acknowledgements
 We would like to acknowledge the following resources that have been instrumental in our project:
 - [hera_sim](https://github.com/HERA-Team/hera_sim) (Custom License)
 - [HIDE](https://github.com/cosmo-ethz/hide) (GPL-3.0 License)
